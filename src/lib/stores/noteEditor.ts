@@ -3,13 +3,13 @@ import type { RxNostr } from 'rx-nostr';
 
 import type { LoadingNote } from '$lib/entities/LoadingNote';
 import type LongFormContent from '$lib/entities/LongFormContent';
-import { nip19ToHex, decodeNip19 } from '$lib/services/NostrClient';
+import { decodeNip19 } from '$lib/services/NostrClient';
 import KeyManager from '$lib/services/KeyManager';
 import { notesStore, noteStore, recentUserReactedNotesStore } from '$lib/stores/nostr';
 
 export function createNoteEditorStore(params: { matome?: LongFormContent; client: RxNostr }) {
   const { matome, client } = params;
-  const initNoteIds = matome?.noteIds()?.map(nip19ToHex) ?? [];
+  const initNoteIds = matome?.noteIds()?.map((id) => decodeNip19(id).id) ?? [];
   const editorInitialized = writable(false);
   const searchInitialized = writable(false);
   const notes = writable<LoadingNote[]>([]);
@@ -72,7 +72,7 @@ export function createNoteEditorStore(params: { matome?: LongFormContent; client
 
   const removeNote = (noteId: string) => {
     const hex =
-      noteId.startsWith('note1') || noteId.startsWith('nevent1') ? nip19ToHex(noteId) : noteId;
+      noteId.startsWith('note1') || noteId.startsWith('nevent1') ? decodeNip19(noteId).id : noteId;
     notes.update((prev) => prev.filter((note) => note.id !== hex));
   };
 
