@@ -11,6 +11,17 @@ export const nip19ToHex = (b32: string) => {
   else if (data.type === 'nevent') return (data.data as nip19.EventPointer).id;
 };
 
+export const decodeNip19 = (b32: string): { id: string; relays?: string[] } => {
+  const data = nip19.decode(b32);
+  if (data.type === 'note') {
+    return { id: data.data };
+  } else if (data.type === 'nevent') {
+    const eventPointer = data.data as nip19.EventPointer;
+    return { id: eventPointer.id, relays: eventPointer.relays };
+  }
+  throw new Error(`Unsupported nip19 type: ${data.type}`);
+};
+
 export default class NostrClient {
   static TAG = 'nosli';
 

@@ -3,7 +3,7 @@ import type { RxNostr } from 'rx-nostr';
 
 import type { LoadingNote } from '$lib/entities/LoadingNote';
 import type LongFormContent from '$lib/entities/LongFormContent';
-import { nip19ToHex } from '$lib/services/NostrClient';
+import { nip19ToHex, decodeNip19 } from '$lib/services/NostrClient';
 import KeyManager from '$lib/services/KeyManager';
 import { notesStore, noteStore, recentUserReactedNotesStore } from '$lib/stores/nostr';
 
@@ -39,8 +39,25 @@ export function createNoteEditorStore(params: { matome?: LongFormContent; client
   });
 
   const appendNote = (noteId: string) => {
-    const hex =
-      noteId.startsWith('note1') || noteId.startsWith('nevent1') ? nip19ToHex(noteId) : noteId;
+    let hex: string;
+    let relays: string[] | undefined;
+
+    if (noteId.startsWith('note1') || noteId.startsWith('nevent1')) {
+      const decoded = decodeNip19(noteId);
+      hex = decoded.id;
+      relays = decoded.relays;
+    } else {
+      hex = noteId;
+    }
+
+    // Add relay hints from nevent to the client
+    if (relays && relays.length > 0) {
+      for (const relay of relays) {
+        if (!client.hasRelay(relay)) {
+          client.addRelay(relay);
+        }
+      }
+    }
 
     noteStore({ client, id: hex }).subscribe((note) => {
       notes.update((prev) => [
