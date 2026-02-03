@@ -9,7 +9,20 @@ import { notesStore, noteStore, recentUserReactedNotesStore } from '$lib/stores/
 
 export function createNoteEditorStore(params: { matome?: LongFormContent; client: RxNostr }) {
   const { matome, client } = params;
-  const initNoteIds = matome?.noteIds()?.map((id) => decodeNip19(id).id) ?? [];
+  const decodedNotes = matome?.noteIds()?.map((id) => decodeNip19(id)) ?? [];
+  const initNoteIds = decodedNotes.map((d) => d.id);
+
+  // Add relay hints from existing matome to the client
+  for (const decoded of decodedNotes) {
+    if (decoded.relays && decoded.relays.length > 0) {
+      for (const relay of decoded.relays) {
+        if (!client.hasRelay(relay)) {
+          client.addRelay(relay);
+        }
+      }
+    }
+  }
+
   const editorInitialized = writable(false);
   const searchInitialized = writable(false);
   const notes = writable<LoadingNote[]>([]);
